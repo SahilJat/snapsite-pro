@@ -105,15 +105,50 @@ app.post('/login', async (req, res) => {
 
 // --- TASK ROUTES (Protected) ---
 
-// GET (Only MY tasks)
+// server/index.js (Inside the GET /tasks route)
+
+// GET (Read tasks with SEARCH and FILTER)
 app.get('/tasks', authenticateToken, async (req, res) => {
   try {
-    // We use req.user.id (from the token) to filter
-    const result = await pool.query('SELECT * FROM tasks WHERE user_id = $1 ORDER BY id ASC', [req.user.id]);
-    res.json(result.rows);
-  } catch (err) { res.status(500).send(err.message); }
-});
+    // 1. Extract Query Params from the URL
+    // Example URL: /tasks?search=cement&priority=High
+    const { search, priority } = req.query;
+    const userId = req.user.id;
 
+    // 2. Start building the SQL query
+    // We always filter by User ID first for security
+    let sql = 'SELECT * FROM tasks WHERE user_id = $1';
+    let params = [userId];
+    let paramIndex = 2; // Next variable will be $2
+
+    // 3. Add Search Logic (if user typed something)
+    if (search) {
+      // ILIKE means "Case-Insensitive Search" (cement = Cement)
+      // % means "anything before or after" (e.g., "Buy Cement Now")
+      sql += ` AND text ILIKE $${paramIndex}`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    // 4. Add Priority Logic (if user selected a filter)
+    if (priority && priority !== 'All') {
+      sql += ` AND priority = $${paramIndex}`;
+      params.push(priority);
+      paramIndex++;
+    }
+
+    // 5. Finish with sorting
+    sql += ' ORDER BY id DESC'; // Newest first
+
+    // 6. Execute
+    const result = await pool.query(sql, params);
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
 // POST (Create for ME)
 app.post('/tasks', authenticateToken, async (req, res) => {
   try {// REGISTER
