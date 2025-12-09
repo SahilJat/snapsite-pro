@@ -1,0 +1,19 @@
+# Dependency directories
+node_modules/
+
+# OS junk files
+.DS_Store
+Thumbs.db
+
+# Environment variables (Safety First!)
+.env
+
+# Build outputs
+dist/
+build/
+
+# Docker volumes (Don't upload database data!)
+postgres_data/
+
+# Logs
+npm-debug.log

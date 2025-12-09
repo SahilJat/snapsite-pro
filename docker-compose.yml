@@ -1,0 +1,21 @@
+
+
+version: '3.8'
+
+services:
+  # The Database Service
+  db:
+    image: postgres:15-alpine # The pre-built software image
+    container_name: site_snap_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: Sahiljaat           # Username
+      POSTGRES_PASSWORD: Dontknow543 # Password
+      POSTGRES_DB: tasks_db          # Database Name
+    ports:
+      - "5432:5432" # Open the gate (Port 5432 is standard for Postgres)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Save data even if container stops
+
+volumes:
+  postgres_data: # The persistent storage area
