@@ -176,13 +176,17 @@ app.post('/tasks', authenticateToken, async (req, res) => {
 
         // 1. Find user
         const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-        if (result.rows.length === 0) return res.status(400).send("User not found");
+        if (result.rows.length === 0) {
+          return res.status(400).json({ error: "User not found" }); // <--- Wrap it in an object
+        }
 
         const user = result.rows[0];
 
         // 2. Check Password
         const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) return res.status(403).send("Invalid Password");
+        if (!validPassword) {
+          return res.status(403).send("Invalid Password");
+        }
 
         // 3. Generate ID Card (Token)
         const token = jwt.sign({ id: user.id, email: user.email }, SECRET_KEY);
