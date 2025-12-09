@@ -216,14 +216,47 @@ app.post('/tasks', authenticateToken, async (req, res) => {
       } catch (err) { res.status(500).send(err.message); }
     });
 
-    // PUT & DELETE (Same as before, just needs protection if you want strict security)
+
+
+    // PUT (Update Task - Priority OR Text)
     app.put('/tasks/:id', authenticateToken, async (req, res) => {
-      /* Logic remains same, usually you add "AND user_id = $1" to ensure you don't edit others' tasks */
       try {
-        const { priority } = req.body;
-        await pool.query("UPDATE tasks SET priority = $1 WHERE id = $2", [priority, req.params.id]);
-        res.json("Updated");
-      } catch (err) { res.status(500).send(err.message); }
+        const { id } = req.params;
+        const { priority, text } = req.body;
+        const userId = req.user.id;
+
+
+        const check = await pool.query("SELECT * FROM tasks WHERE id = $1 AND user_id = $2", [id, userId]);
+        if (check.rows.length === 0) return res.status(404).json("Task not found or unauthorized");
+
+
+        let fields = [];
+        let params = [];
+        let paramIndex = 1;
+
+        if (priority) {
+          fields.push(`priority = $${paramIndex}`);
+          params.push(priority);
+          paramIndex++;
+        }
+        if (text) {
+          fields.push(`text = $${paramIndex}`);
+          params.push(text);
+          paramIndex++;
+        }
+
+
+        params.push(id);
+
+        const sql = `UPDATE tasks SET ${fields.join(', ')} WHERE id = $${paramIndex}`;
+
+        await pool.query(sql, params);
+        res.json("Updated Successfully");
+
+      } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Server Error");
+      }
     });
 
     app.delete('/tasks/:id', authenticateToken, async (req, res) => {
